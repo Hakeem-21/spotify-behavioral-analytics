@@ -1,0 +1,20 @@
+# Virtual environment (never upload this)
+.venv/
+venv/
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Database and raw data (too big for GitHub)
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+
+# PyCharm configuration files
+.idea/
+
+.cache/
+*.cache
