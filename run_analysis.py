@@ -20,6 +20,7 @@ def execute_query(title, query):
 
 
 # --- 1. Sessionization & Track Position Drop-off Funnel ---
+
 query_funnel = """
 WITH session_positions AS (
     SELECT 
@@ -43,6 +44,7 @@ ORDER BY session_position ASC;
 """
 
 # --- 2. Skip Propensity by Subscription Tier (Free vs Premium) ---
+
 query_tiers = """
 SELECT 
     CASE WHEN premium = 1 THEN 'Premium' ELSE 'Free' END AS subscription_tier,
@@ -56,6 +58,7 @@ GROUP BY premium;
 """
 
 # --- 3. Friction Detection: Consecutive Skip Chains using Window Functions ---
+
 query_consecutive_skips = """
 WITH lagged_skips AS (
     SELECT 
@@ -78,6 +81,7 @@ ORDER BY consecutive_skip_rate_pct DESC;
 """
 
 # --- 4. Acoustic Profile of Completed vs Skipped Tracks ---
+
 query_acoustic_friction = """
 SELECT 
     CASE 
@@ -98,9 +102,9 @@ JOIN track_features tf
 GROUP BY listening_outcome;
 """
 
-# =============================================================
+
 # Query: Skip Cascade and Session Churn Probability
-# =============================================================
+
 query_churn = """
 WITH session_events AS (
     SELECT 
@@ -148,12 +152,10 @@ GROUP BY skip_streak_stage
 ORDER BY skip_streak_stage ASC;
 """
 
-# =============================================================
+
 # Query 2: Acoustic Delta Transitions (Context Whiplash)
-# =============================================================
-# =============================================================
-# Query 2: Acoustic Delta Transitions (Context Whiplash)
-# =============================================================
+
+
 query_acoustic_deltas = """
 WITH track_transitions AS (
     SELECT 
@@ -209,9 +211,9 @@ GROUP BY outcome_label
 ORDER BY outcome_label ASC;
 """
 
-# =============================================================
+
 # Query 3: Intent Vectors & Start Reason Performance
-# =============================================================
+
 query_intent_vectors = """
 SELECT 
     hist_user_behavior_reason_start AS start_reason,
