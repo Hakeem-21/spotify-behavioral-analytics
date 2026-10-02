@@ -107,14 +107,6 @@ Tracking skip behaviors across tiers reveals how product constraints influence u
 * **Analytical SQL**: Multi-level Common Table Expressions (CTEs), Window Functions (`LAG`, `LEAD`, `PARTITION BY`), Aggregations, Conditional Logic (`CASE WHEN`)
 * **Python Analytics**: `pandas`, `sqlite3`
 * **Data Visualization**: `seaborn`, `matplotlib`
----
-
-## 🛠️ Tech Stack & Methods Used
-
-* **Relational Database**: SQLite3 (ACID compliant, relational integrity)
-* **Analytical SQL**: Multi-level Common Table Expressions (CTEs), Window Functions (`LAG`, `LEAD`, `PARTITION BY`), Aggregations, Conditional Logic (`CASE WHEN`)
-* **Python Analytics**: `pandas`, `sqlite3`
-* **Data Visualization**: `seaborn`, `matplotlib` (custom styled, annotated data labels)
 
 ---
 
