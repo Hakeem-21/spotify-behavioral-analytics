@@ -1,5 +1,4 @@
-# --- 1. Sessionization & Track Position Drop-off Funnel ---
-
+-- [query_funnel]
 WITH session_positions AS (
     SELECT
         session_position,
@@ -8,7 +7,7 @@ WITH session_positions AS (
         SUM(CASE WHEN skip_1 = 1 THEN 1 ELSE 0 END) AS instant_skips,
         SUM(CASE WHEN skip_2 = 1 THEN 1 ELSE 0 END) AS mid_skips
     FROM listening_sessions
-    WHERE session_position <= 10
+    WHERE session_position <= 15
     GROUP BY session_position
 )
 SELECT
@@ -20,8 +19,8 @@ SELECT
 FROM session_positions
 ORDER BY session_position ASC;
 
-# --- 2. Skip Propensity by Subscription Tier (Free vs Premium) ---
 
+-- [query_tiers]
 SELECT
     CASE WHEN premium = 1 THEN 'Premium' ELSE 'Free' END AS subscription_tier,
     COUNT(*) AS total_events,
@@ -32,8 +31,8 @@ SELECT
 FROM listening_sessions
 GROUP BY premium;
 
-# --- 3. Friction Detection: Consecutive Skip Chains using Window Functions ---
 
+-- [query_consecutive_skips]
 WITH lagged_skips AS (
     SELECT
         session_id,
@@ -53,8 +52,8 @@ FROM lagged_skips
 GROUP BY context_type
 ORDER BY consecutive_skip_rate_pct DESC;
 
-# --- 4. Acoustic Profile of Completed vs Skipped Tracks ---
 
+-- [query_acoustic_profile]
 SELECT
     CASE
         WHEN ls.not_skipped = 1 THEN 'Completed Naturally'
@@ -73,8 +72,8 @@ JOIN track_features tf
   ON ls.track_id_clean = tf.track_id
 GROUP BY listening_outcome;
 
-# --- 5. Skip Cascade and Session Churn Probability---
 
+-- [query_churn]
 WITH session_events AS (
     SELECT
         session_id,
@@ -102,10 +101,10 @@ classified_events AS (
     SELECT
         *,
         CASE
-            WHEN skip_2 = 0 THEN '0. No Skip (Completed)'
-            WHEN skip_2 = 1 AND prev_skip_1 = 0 THEN '1. First Skip (Isolated)'
-            WHEN skip_2 = 1 AND prev_skip_1 = 1 AND prev_skip_2 = 0 THEN '2. Two Consecutive Skips'
-            WHEN skip_2 = 1 AND prev_skip_1 = 1 AND prev_skip_2 = 1 THEN '3. Three+ Consecutive Skips'
+            WHEN skip_2 = 0 THEN '0. Completed'
+            WHEN skip_2 = 1 AND prev_skip_1 = 0 THEN '1. First Skip'
+            WHEN skip_2 = 1 AND prev_skip_1 = 1 AND prev_skip_2 = 0 THEN '2. Two Skips'
+            WHEN skip_2 = 1 AND prev_skip_1 = 1 AND prev_skip_2 = 1 THEN '3. 3+ Skips'
             ELSE 'Other'
         END AS skip_streak_stage
     FROM session_events
@@ -120,7 +119,8 @@ WHERE skip_streak_stage != 'Other'
 GROUP BY skip_streak_stage
 ORDER BY skip_streak_stage ASC;
 
-# --- 6. Acoustic Delta Transitions (Context Whiplash)---
+
+-- [query_acoustic_deltas]
 WITH track_transitions AS (
     SELECT
         ls.session_id,
@@ -131,7 +131,6 @@ WITH track_transitions AS (
         tf.energy,
         tf.tempo,
         tf.danceability,
-        -- Look back at the previous track in the same session
         LAG(tf.energy) OVER (
             PARTITION BY ls.session_id
             ORDER BY ls.session_position
@@ -155,13 +154,13 @@ calculated_deltas AS (
         ABS(tempo - prev_tempo) AS delta_tempo,
         ABS(danceability - prev_danceability) AS delta_danceability,
         CASE
-            WHEN skip_1 = 1 THEN '1. Skipped Very Early (<30s)'
-            WHEN skip_2 = 1 THEN '2. Skipped Mid-Track'
-            WHEN not_skipped = 1 THEN '3. Fully Completed'
+            WHEN skip_1 = 1 THEN 'Instant Skip (<5s)'
+            WHEN skip_2 = 1 THEN 'Mid-track Skip'
+            WHEN not_skipped = 1 THEN 'Completed Naturally'
             ELSE 'Other'
         END AS outcome_label
     FROM track_transitions
-    WHERE prev_energy IS NOT NULL  -- Skip track 1 (no preceding track to compare)
+    WHERE prev_energy IS NOT NULL
 )
 SELECT
     outcome_label,
@@ -174,16 +173,14 @@ WHERE outcome_label != 'Other'
 GROUP BY outcome_label
 ORDER BY outcome_label ASC;
 
-# --- 7. Intent Vectors & Start Reason Performance ---
 
+-- [query_intent_vectors]
 SELECT
     hist_user_behavior_reason_start AS start_reason,
     COUNT(*) AS total_plays,
     ROUND(AVG(skip_2) * 100, 2) AS skip_rate_pct,
     ROUND(AVG(not_skipped) * 100, 2) AS completion_rate_pct,
-    -- Tracks ended by manual forward skip
     ROUND(SUM(CASE WHEN hist_user_behavior_reason_end = 'fwdbtn' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS manual_skip_end_pct,
-    -- Tracks where user terminated playback
     ROUND(SUM(CASE WHEN hist_user_behavior_reason_end = 'endplay' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS session_stop_pct
 FROM listening_sessions
 GROUP BY hist_user_behavior_reason_start
