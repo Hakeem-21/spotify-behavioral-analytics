@@ -69,12 +69,6 @@ def export_funnel_metrics(conn: sqlite3.Connection, query: str) -> None:
     print("  -> Exporting: pbi_funnel.csv...")
     df = pd.read_sql_query(query, conn)
 
-    # Rename columns to match Power BI schema
-    df = df.rename(columns={
-        "completion_rate_pct": "completion_rate",
-        "instant_skip_rate_pct": "instant_skip_rate"
-    })
-
     target_cols = [c for c in ["session_position", "completion_rate", "instant_skip_rate"] if c in df.columns]
     output_path = os.path.join(OUTPUT_DIR, "pbi_funnel.csv")
     df[target_cols].to_csv(output_path, index=False)
@@ -84,7 +78,6 @@ def export_tier_divergence(conn: sqlite3.Connection, query: str) -> None:
     """Visual 2: Subscription Tier Behavioral Comparison (Free vs Premium)."""
     print("  -> Exporting: pbi_tiers.csv...")
     df_raw = pd.read_sql_query(query, conn)
-    df_raw = df_raw.rename(columns={"subscription_tier": "user_tier"})
 
     metric_cols = [c for c in TIER_METRIC_MAP.keys() if c in df_raw.columns]
     df_melted = pd.melt(
@@ -104,7 +97,6 @@ def export_acoustic_matrix(conn: sqlite3.Connection, query: str) -> None:
     """Visual 3: Acoustic Attribute Profile Matrix (Melted for Heatmap)."""
     print("  -> Exporting: pbi_acoustic_heatmap.csv...")
     df_raw = pd.read_sql_query(query, conn)
-    df_raw = df_raw.rename(columns={"listening_outcome": "outcome"})
 
     feature_cols = [c for c in df_raw.columns if c.startswith("avg_")]
     df_melted = pd.melt(

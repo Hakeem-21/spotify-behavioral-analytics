@@ -13,8 +13,8 @@ WITH session_positions AS (
 SELECT
     session_position,
     total_track_plays,
-    ROUND(CAST(fully_completed AS FLOAT) / total_track_plays * 100, 2) AS completion_rate_pct,
-    ROUND(CAST(instant_skips AS FLOAT) / total_track_plays * 100, 2) AS instant_skip_rate_pct,
+    ROUND(CAST(fully_completed AS FLOAT) / total_track_plays * 100, 2) AS completion_rate,
+    ROUND(CAST(instant_skips AS FLOAT) / total_track_plays * 100, 2) AS instant_skip_rate,
     ROUND(CAST(mid_skips AS FLOAT) / total_track_plays * 100, 2) AS mid_skip_rate_pct
 FROM session_positions
 ORDER BY session_position ASC;
@@ -22,7 +22,7 @@ ORDER BY session_position ASC;
 
 -- [query_tiers]
 SELECT
-    CASE WHEN premium = 1 THEN 'Premium' ELSE 'Free' END AS subscription_tier,
+    CASE WHEN premium = 1 THEN 'Premium' ELSE 'Free' END AS user_tier,
     COUNT(*) AS total_events,
     ROUND(AVG(skip_1) * 100, 2) AS early_skip_pct,
     ROUND(AVG(skip_2) * 100, 2) AS mid_skip_pct,
@@ -59,7 +59,7 @@ SELECT
         WHEN ls.not_skipped = 1 THEN 'Completed Naturally'
         WHEN ls.skip_1 = 1 THEN 'Instant Skip (<5s)'
         ELSE 'Mid-track Skip'
-    END AS listening_outcome,
+    END AS outcome,
     COUNT(*) AS play_count,
     ROUND(AVG(tf.duration), 1) AS avg_duration_sec,
     ROUND(AVG(tf.danceability), 3) AS avg_danceability,
@@ -70,7 +70,7 @@ SELECT
 FROM listening_sessions ls
 JOIN track_features tf
   ON ls.track_id_clean = tf.track_id
-GROUP BY listening_outcome;
+GROUP BY outcome;
 
 
 -- [query_churn]
